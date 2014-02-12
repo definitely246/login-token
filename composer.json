@@ -1,0 +1,23 @@
+{
+    "name": "definitely246/login-token",
+    "description": "",
+    "authors": [
+        {
+            "name": "Kelt Dockins",
+            "email": "kelt@dockins.org"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0",
+        "illuminate/support": "4.*"
+    },
+    "autoload": {
+        "classmap": [
+            "src/migrations"
+        ],
+        "psr-0": {
+            "Definitely246\\LoginToken\\": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
