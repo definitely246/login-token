@@ -36,7 +36,7 @@ You are ready to go. Normally you wouldn't put all the code below in a single fi
 
 ```php
 
-class OverrideLoginTokenHandler1 implements Definitely246\LoginToken\Interfaces\TokenHandlerInterface
+class OverrideLoginTokenHandler implements Definitely246\LoginToken\Interfaces\TokenHandlerInterface
 {
 	public function onValidToken($token)
 	{
