@@ -3,6 +3,7 @@
 use DateTime,
 	Definitely246\LoginToken\Models\LoginToken,
 	Definitely246\LoginToken\Interfaces\TokenDriverInterface,
+	Definitely246\LoginToken\Exceptions\EmptyTokenException,
 	Definitely246\LoginToken\Exceptions\InvalidTokenException,
 	Definitely246\LoginToken\Exceptions\ExpiredTokenException;
 
@@ -39,10 +40,11 @@ class LaravelDatabaseTokenDriver implements TokenDriverInterface
 	 */
 	public function __construct($app)
 	{
-		$this->router = $app['router'];
-		$this->token = new LoginToken(array(), $this);
 		$this->currentToken = null;
+		$this->router = $app['router'];
 		$this->table = $app['db']->table('def246_login_tokens');
+		$this->token = new LoginToken(array(), $this);
+		$this->tokenString = $app['config']->get('login-token::config.token_string');
 	}
 
 	/**
@@ -55,15 +57,21 @@ class LaravelDatabaseTokenDriver implements TokenDriverInterface
 	 */
 	public function attempt($tokenString)
 	{
+		if (!$tokenString)
+		{
+			throw new EmptyTokenException("Cannot look up a token from empty token string.");
+		}
+
 		$token = $this->token->find($tokenString);
 
-		if (!$token) {
+		if (!$token)
+		{
 			throw new InvalidTokenException("This token string could not be found!");
 		}
 
 		if ($token->isExpired())
 		{
-			throw new ExpiredTokenException("This token string has expired!");
+			throw new ExpiredTokenException("This token string has expired!", $token);
 		}
 
 		return $token;
@@ -120,17 +128,28 @@ class LaravelDatabaseTokenDriver implements TokenDriverInterface
 	 * 
 	 * @return LoginToken
 	 */
-	public function token()
+	public function token($tokenString = null)
 	{
-		$request = $this->router->getCurrentRequest();
-		$token = $request->header('X-Auth-Token') ?: $request->input('login_token');
+		$tokenString = $tokenString ?: $this->tokenString();
 
-		if ($token)
+		if ($tokenString)
 		{
-			return $this->check($token);
+			return $this->check($tokenString);
 		}
 
 		return null;
+	}
+
+	/**
+	 * Returns the token string for this request
+	 * 
+	 * @param  $request
+	 * @return 
+	 */
+	public function tokenString($request = null)
+	{
+		$request = $request ?: $this->router->getCurrentRequest();
+		return call_user_func_array($this->tokenString, array($request));
 	}
 
 	/**

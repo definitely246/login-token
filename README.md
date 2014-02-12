@@ -32,52 +32,68 @@ Since the tokens are stored in a database table we need to run migrations to gen
 
 ### Quickstart Example
 
-You are ready to go. Normally you wouldn't put all the code below in a single file but for breviety let's just open up the `routes.php` file
+You are ready to go. So you could add this route filter to your `filters.php`
 
 ```php
-
-class OverrideLoginTokenHandler implements Definitely246\LoginToken\Interfaces\TokenHandlerInterface
+/*
+|--------------------------------------------------------------------------
+| Login token filter
+|--------------------------------------------------------------------------
+|
+| This class handles incoming token requests that are in the route filter
+| for login.token. Basically, if a valid token is supplied then we login
+| the user in
+|
+*/
+Route::filter('login.token', function($route, $request)
 {
-	public function onValidToken($token)
-	{
-		dd('valid token', $token);
-		// if (!Auth::check())
-		// {
-		// 	$userId = $token->getAttachment('user_id');
-		// 	Auth::loginUsingId($userId);
-		// }
-	}
+	$tokenString = LoginToken::tokenString();
 
-	public function onInvalidToken($exception)
+	try
 	{
-		dd('invalid token', $exception);
-		// throw $exception;
-	}
+		$token = LoginToken::attempt($tokenString);
 
-	public function onExpiredToken($token, $exception)
+		$userId = $token->getAttachment('userId');
+
+		Auth::loginUsingId($userId);
+
+		$token->delete();
+	}
+	catch (Definitely246\LoginToken\Exceptions\EmptyTokenException $e)
 	{
-		dd('expired token', $token, $exception);
-		// $token->expires_at = new DateTime("+1 hour");
-		// $token->save();
-		// throw $exception;
+		// don't worry about empty tokens because our auth.basic
+		// filter will keep people from accessing the resource
+		// but we could handle this or just throw $e; if we wanted
 	}
-
-	public function onEmptyToken()
+	catch (Definitely246\LoginToken\Exceptions\InvalidTokenException $e)
 	{
-		dd('empty token');
-		// return Redirect::to('login');
+		// and same reasoning about empty tokens applies to invalid tokens
 	}
-}
+	catch (Definitely246\LoginToken\Exceptions\ExpiredTokenException $e)
+	{
+		// go ahead and delete expired tokens
+		$token = $e->getToken();
+		$token->delete();
+	}
+});
+```
 
+And then in your `routes.php` add something like this
+
+```php
 Route::group(['before' => 'login.token|auth.basic'], function()
 {
     Route::get('foo', function()
     {
-    	dd('here is current token', LoginToken::token());
+    	return "this route is protected by auth.basic and login.token";
     });
 });
 
-// use this route to generate a new token
+```
+
+Next you need a way to generate tokens, for this example we will just add another route to our `routes.php`
+
+```php
 Route::get('token', function()
 {
     $token = LoginToken::generate(null, ['user_id' => 1]);
@@ -90,16 +106,6 @@ Route::get('token', function()
     	<p><a href=\"foo?login_token={$expired->token_string}\">Go to /foo with expired token</a></p>
     	";
 });
-
-```
-
-You don't have to define the `OverrideLoginTokenHandler` class. If you don't want to do this, you can also [publish your config](#Additional Configuration) and set the proper classes there. The default out of the box Handler is pretty generic and it is assumed you will write your own handlers.
-
-Note also that you can also use the IoC Container in Laravel to faciliate your handlers.
-
-```php
-	$foo = My\Cool\TokenHandlerOverride;
-	App::instance('OverrideLoginTokenHandler', $foo);
 ```
 
 ### About LoginToken Facade
@@ -138,10 +144,18 @@ This will return the newly generated LoginToken.
 
 #### token
 
-This will return the current logged in token for the page. If there is not one, it is simply null.
+This will return the token string for the page. If tokenString is null then it is extracted from LoginToken::tokenString(). If there is no token found this returns null.
 
 ```php
-	LoginToken::token();
+	LoginToken::token($tokenString = null);
+```
+
+#### tokenString
+
+This will return the current token string for the given request. If the $request is null then we use Laravel's IoC container to resolve the currentRequest for given route.
+
+```php
+	LoginToken::token($request = null);
 ```
 
 #### logout
@@ -173,14 +187,6 @@ You can publish the configuration if you need to make adjustments to how this pa
 
 Next change these options how you see fit.
 
-#### Route filter
-
-This is the class which handles the route filtering
-
-```php
-	'route_filter' => 'Definitely246\LoginToken\RouteFilters\LaravelRouteFilter',
-```
-
 #### Token driver
 
 This is the driver which persists and fetches the tokens for this package. Default is to use a database driver.
@@ -189,20 +195,13 @@ This is the driver which persists and fetches the tokens for this package. Defau
 	'token_driver' => 'Definitely246\LoginToken\Drivers\LaravelDatabaseTokenDriver',
 ```
 
-#### Token handler
+#### Token string
 
-This is the default class which handles what should happen when a route filter kicks in.
-
-```php
-	'token_handler' => 'Definitely246\LoginToken\Handlers\LaravelTokenHandler',
-```
-
-#### Token handler override
-
-This is the override class which (if defined) handles what should happen when a route filter kicks in.
+This closure determines how we get the token string from the request object and is used for getting like LoginToke::token() which returns the current token for the current request.
 
 ```php
-	'token_handler_override' => 'OverrideLoginTokenHandler',
+	'token_string' => function($request)
+	{
+		return $request->header('X-Auth-Token') ?: $request->input('login_token');
+	}
 ```
-
-

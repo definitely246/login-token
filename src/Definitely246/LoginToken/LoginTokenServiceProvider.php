@@ -20,25 +20,10 @@ class LoginTokenServiceProvider extends ServiceProvider
 	{
 		$this->package('definitely246/login-token');
 
-		$app = $this->app;
+		$tokenDriverClassName = $this->app->config->get('login-token::config.token_driver');
 
-		$config = $this->app->config->get('login-token::config');
+		$tokenDriver = (new ReflectionClass($tokenDriverClassName))->newInstanceArgs(array($this->app));
 
-		$tokenDriver = (new ReflectionClass($config['token_driver']))->newInstanceArgs(array($this->app));
-
-		$tokenHandler = (new ReflectionClass($config['token_handler']))->newInstanceArgs(array());
-
-		// delegate the handler to an override class
-		if (method_exists($tokenHandler, 'setOverride'))
-		{
-			$tokenHandler->setOverride($config['token_handler_override'], $app);
-		}
-
-		$routeFilter = (new ReflectionClass($config['route_filter']))->newInstanceArgs(array($tokenDriver, $tokenHandler));
-
-		$routeFilter->register($this->app);
-
-		// binding that the LoginToken facade uses
 		$this->app->bind('login-token', function() use ($tokenDriver)
 		{
 			return $tokenDriver;

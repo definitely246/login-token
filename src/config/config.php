@@ -2,17 +2,6 @@
 
 	/*
 	|--------------------------------------------------------------------------
-	| route_filter
-	|--------------------------------------------------------------------------
-	|
-	| This is the route filter that will be used to filter routes
-	| 
-	|
-	*/
-	'route_filter' => 'Definitely246\LoginToken\RouteFilters\LaravelRouteFilter',
-
-	/*
-	|--------------------------------------------------------------------------
 	| token_driver
 	|--------------------------------------------------------------------------
 	|
@@ -24,24 +13,16 @@
 
 	/*
 	|--------------------------------------------------------------------------
-	| token_handler
+	| token_string
 	|--------------------------------------------------------------------------
 	|
-	| This is the token handler which will handle valid, invalid and empty token
-	| requests.
+	| This closure determines how we get the token string from the request object
+	| and is used for getting like LoginToke::token() which returns the current
+	| token for the current request.
 	|
 	*/
-	'token_handler' => 'Definitely246\LoginToken\Handlers\LaravelTokenHandler',
-
-	/*
-	|--------------------------------------------------------------------------
-	| token_handler_override
-	|--------------------------------------------------------------------------
-	|
-	| If this class is present in the default namespace it will be used as the
-	| token handler for all requests. This allows users to easily create their own
-	| token handlers.
-	|
-	*/
-	'token_handler_override' => 'OverrideLoginTokenHandler'
+	'token_string' => function($request)
+	{
+		return $request->header('X-Auth-Token') ?: $request->input('login_token');
+	}
 );

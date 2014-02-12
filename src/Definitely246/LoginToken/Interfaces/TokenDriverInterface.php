@@ -7,7 +7,8 @@ interface TokenDriverInterface
 	public function attempt($tokenString);
 	public function check($tokenString);
 	public function generate($expires_at = null, $attachments = array());
-	public function token();
 	public function logout(LoginToken $token);
 	public function refresh(LoginToken $token);
+	public function token($tokenString = null);
+	public function tokenString($request = null);
 }

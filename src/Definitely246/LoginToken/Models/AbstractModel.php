@@ -68,7 +68,7 @@ abstract class AbstractModel
 	 * 
 	 * @return void
 	 */
-	public function remove()
+	public function delete()
 	{
 		return $this->driver->logout($this);
 	}
