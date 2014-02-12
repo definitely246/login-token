@@ -148,7 +148,10 @@ class LaravelDatabaseTokenDriver implements TokenDriverInterface
 	 */
 	public function tokenString($request = null)
 	{
-		$request = $request ?: $this->router->getCurrentRequest();
+		// support both Laravel 4.1 and 4.0 here
+		$currentRequest = method_exists($this->router, 'getCurrentRequest') ? $this->router->getCurrentRequest() : $this->router->getRequest();
+		$request = $request ?: $currentRequest;
+
 		return call_user_func_array($this->tokenString, array($request));
 	}
 
