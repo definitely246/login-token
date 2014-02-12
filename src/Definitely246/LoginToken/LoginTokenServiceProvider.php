@@ -26,15 +26,20 @@ class LoginTokenServiceProvider extends ServiceProvider
 
 		$tokenDriver = (new ReflectionClass($config['token_driver']))->newInstanceArgs(array($this->app));
 
-		$onValidToken = $config['on_valid_token']; $onInvalidToken = $config['on_invalid_token']; $onEmptyToken = $config['on_empty_token'];
+		$tokenHandler = (new ReflectionClass($config['token_handler']))->newInstanceArgs(array());
 
-		$routeFilter = (new ReflectionClass($config['route_filter']))->newInstanceArgs(array($tokenDriver, $onValidToken, $onInvalidToken, $onEmptyToken));
+		if (method_exists($tokenHandler, 'setOverride'))
+		{
+			$tokenHandler->setOverride($config['token_handler_override']);
+		}
+
+		$routeFilter = (new ReflectionClass($config['route_filter']))->newInstanceArgs(array($tokenDriver, $tokenHandler));
 
 		$routeFilter->register($this->app);
 
 		$this->app->bind('login-token', function() use ($tokenDriver)
 		{
-			return $tokenDriver->current();
+			return $tokenDriver;
 		});
 	}
 

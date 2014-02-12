@@ -24,43 +24,24 @@
 
 	/*
 	|--------------------------------------------------------------------------
-	| on_valid_token
+	| token_handler
 	|--------------------------------------------------------------------------
 	|
-	| This is the callback that happens when a token examined by the route
-	| filter above is actually valid according to the given token_driver.
+	| This is the token handler which will handle valid, invalid and empty token
+	| requests.
 	|
 	*/
-	'on_valid_token' => function($token)
-	{
-		return Event::fire('login.token.valid', $token);
-	},
+	'token_handler' => 'Definitely246\LoginToken\Handlers\LaravelTokenHandler',
 
 	/*
 	|--------------------------------------------------------------------------
-	| on_invalid_token
+	| token_handler_override
 	|--------------------------------------------------------------------------
 	|
-	| This is the callback that fires when a token examined by the route filter
-	| above is invalid according to the given token_driver.
+	| If this class is present in the default namespace it will be used as the
+	| token handler for all requests. This allows users to easily create their own
+	| token handlers.
 	|
 	*/
-	'on_invalid_token' => function($message)
-	{
-		return Event::fire('login.token.invalid', $message);
-	},
-
-	/*
-	|--------------------------------------------------------------------------
-	| on_empty_token
-	|--------------------------------------------------------------------------
-	|
-	| This is the callback that fires when a token examined by the route filter
-	| above is empty.
-	|
-	*/
-	'on_empty_token' => function()
-	{
-		return Event::fire('login.token.empty');
-	}
+	'token_handler_override' => 'LaravelTokenHandler'
 );

@@ -1,7 +1,6 @@
 <?php namespace Definitely246\LoginToken\Drivers;
 
-use Schema, 
-	DateTime,
+use DateTime,
 	Definitely246\LoginToken\Models\LoginToken,
 	Definitely246\LoginToken\Interfaces\TokenDriverInterface,
 	Definitely246\LoginToken\Exceptions\InvalidTokenException,
@@ -22,13 +21,27 @@ class LaravelDatabaseTokenDriver implements TokenDriverInterface
 	protected $table; 
 
 	/**
+	 * [$currentToken description]
+	 * @var [type]
+	 */
+	protected $currentToken;
+
+	/**
+	 * [$router description]
+	 * @var [type]
+	 */
+	protected $router;
+
+	/**
 	 * Initialize the database token driver 
 	 * 
 	 * @param [type] $database
 	 */
 	public function __construct($app)
 	{
+		$this->router = $app['router'];
 		$this->token = new LoginToken(array(), $this);
+		$this->currentToken = null;
 		$this->table = $app['db']->table('def246_login_tokens');
 	}
 
@@ -66,7 +79,40 @@ class LaravelDatabaseTokenDriver implements TokenDriverInterface
 	{
 		$results = $this->table->where('token_string', '=', $tokenString)->first();
 
+		if ($results && isset($results->attachments) && $results->attachments !== null)
+		{
+			$results->attachments = unserialize($results->attachments);
+		}
+
 		return $results ? $this->token->newInstance((array) $results, $this) : null;
+	}
+
+	/**
+	 * Generates a new token
+	 * 
+	 * @param  int    $identifiable_id
+	 * @param  string $identifiable_type
+	 * @param  string $expires_at
+	 * @return LoginToken
+	 */
+	public function generate($expires_at = null, $attachments = array())
+	{
+		$token = $this->token->newInstance();
+
+		do {
+			$hashkey = $this->randomString(240);
+			$found = $token->find($hashkey);
+		} while ($found);
+
+		$token->expires_at = $expires_at;
+		$token->attachments = $attachments;
+		$token->token_string = $hashkey;
+		$token->created_at = new DateTime;
+		$token->updated_at = new DateTime;
+
+		$token->save();
+
+		return $token;
 	}
 
 	/**
@@ -74,9 +120,17 @@ class LaravelDatabaseTokenDriver implements TokenDriverInterface
 	 * 
 	 * @return LoginToken
 	 */
-	public function current()
+	public function token()
 	{
-		return $this->token;
+		$request = $this->router->getCurrentRequest();
+		$token = $request->header('X-Auth-Token') ?: $request->input('login_token');
+
+		if ($token)
+		{
+			return $this->check($token);
+		}
+
+		return null;
 	}
 
 	/**
@@ -98,13 +152,45 @@ class LaravelDatabaseTokenDriver implements TokenDriverInterface
 	 */
 	public function refresh(LoginToken $token)
 	{
+		$attributes = $token->getAttributes();
+
+		if (array_key_exists('attachments', $attributes))
+		{
+			$attributes['attachments'] = serialize($attributes['attachments']);
+		} 
+
 		if ($token->id)
 		{
-			return $this->table->where('id', $token->id)->update($token->getAttributes());
+			return $this->table->where('id', $token->id)->update($attributes);
 		}
 
-		$token->id = $this->table->insertGetId($token->getAttributes());
+		$token->id = $this->table->insertGetId($attributes);
 
 		return $token;
+	}
+
+	/**
+	 * Generates a random string for us
+	 * 
+	 * @param  integer $length [description]
+	 * @param  string  $pool   [description]
+	 * @return [type]          [description]
+	 */
+	private function randomString($length = 16, $pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+	{
+		return substr(str_shuffle(str_repeat($pool, 5)), 0, $length);
+	}
+
+	/**
+	 * Get the current token given a route and request
+	 * 
+	 * @param  $route
+	 * @param  $request
+	 * @return LoginToken
+	 */
+	private function currentToken($route, $request)
+	{
+		$attributes = array();
+		return new LoginToken($attributes, $this);		
 	}
 }

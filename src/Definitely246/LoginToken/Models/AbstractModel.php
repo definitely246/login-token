@@ -155,16 +155,4 @@ abstract class AbstractModel
 
 		return new static($attributes, $driver);
 	}
-
-	/**
-	 * Generates a random string for us
-	 * 
-	 * @param  integer $length [description]
-	 * @param  string  $pool   [description]
-	 * @return [type]          [description]
-	 */
-	public function randomString($length = 16, $pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
-	{
-		return substr(str_shuffle(str_repeat($pool, 5)), 0, $length);
-	}
 }

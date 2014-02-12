@@ -15,41 +15,18 @@ class LoginToken extends AbstractModel
 	}
 
 	/**
-	 * Generate a new token
+	 * Helper for attachments
 	 * 
-	 * @param  int    $identifiable_id
-	 * @param  string $identifiable_type
-	 * @param  string $expires_at
-	 * @return LoginToken
+	 * @param  [type] $name [description]
+	 * @return [type]       [description]
 	 */
-	public function generate($identifiable_id = null, $identifiable_type = null, $expires_at = null)
+	public function getAttachment($name)
 	{
-		do {
-			$tokenString = $this->randomString(240);
-			$found = $this->find($tokenString);
-		} while ($found);
+		$attachments = $this->getAttribute('attachments');
 
-		$this->identifiable_id = $identifiable_id;
-		$this->identifiable_type = $identifiable_type;
-		$this->expires_at = $expires_at;
-		$this->token_string = $tokenString;
-		$this->created_at = new DateTime;
-		$this->updated_at = new DateTime;
-		$this->save();
-
-		return $this;
-	}
-
-	/**
-	 * Gets the current LoginToken if any
-	 * 
-	 * @return LoginToken
-	 */
-	public function current()
-	{
-		if ($this->id)
+		if (is_array($attachments) && array_key_exists($name, $attachments))
 		{
-			return $this;
+			return $attachments[$name];			
 		}
 
 		return null;

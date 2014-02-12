@@ -9,12 +9,10 @@ class LaravelRouteFilter implements RouteFilterInterface
 	/**
 	 * Create a filter for token logins
 	 */
-	public function __construct($tokenDriver, $onValidToken, $onInvalidToken, $onEmptyToken)
+	public function __construct($tokenDriver, $tokenHandler)
 	{
 		$this->tokenDriver = $tokenDriver;
-		$this->onValidToken = $onValidToken;
-		$this->onInvalidToken = $onInvalidToken;
-		$this->onEmptyToken = $onEmptyToken;
+		$this->tokenHandler = $tokenHandler;
 	}
 
 	/**
@@ -26,10 +24,10 @@ class LaravelRouteFilter implements RouteFilterInterface
 	 */
 	public function filter($route, $request)
 	{
-		$token = $request->header('X-Auth-Token') ?: $request->input('token');
+		$token = $request->header('X-Auth-Token') ?: $request->input('login_token');
 
 		if (!$token) {
-			return call_user_func_array($this->onEmptyToken, array());
+			return $this->tokenHandler->onEmptyToken();
 		}
 
 		try
@@ -38,14 +36,14 @@ class LaravelRouteFilter implements RouteFilterInterface
 		}
 		catch (InvalidTokenException $e)
 		{
-			return call_user_func_array($this->onInvalidToken, array($e->getMessage()));
+			return $this->tokenHandler->onInvalidToken($e);
 		}
 		catch (ExpiredTokenException $e)
 		{
-			return call_user_func_array($this->onInvalidToken, array($e->getMessage()));
+			return $this->tokenHandler->onInvalidToken($e);
 		}
 
-		return call_user_func_array($this->onValidToken, array($token));
+		return $this->tokenHandler->onValidToken($token);
 	}
 
 	/**
@@ -63,16 +61,4 @@ class LaravelRouteFilter implements RouteFilterInterface
 			return $loginFilter->filter($route, $request);
 		});
 	}
-	
-	/**
-	 * Execute the callback on $method
-	 * 
-	 * @param  $method
-	 * @param  $args
-	 * @return anything
-	 */
-	private function callback($method, $args)
-    {
-        return call_user_func_array($this->$method, $args);
-    }
 }
