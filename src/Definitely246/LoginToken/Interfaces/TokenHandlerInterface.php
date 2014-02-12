@@ -3,6 +3,7 @@
 interface TokenHandlerInterface
 {
 	public function onValidToken($token);
-	public function onInvalidToken($message);
+	public function onInvalidToken($exception);
+	public function onExpiredToken($token, $exception);
 	public function onEmptyToken();
 }

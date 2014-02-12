@@ -28,15 +28,17 @@ class LoginTokenServiceProvider extends ServiceProvider
 
 		$tokenHandler = (new ReflectionClass($config['token_handler']))->newInstanceArgs(array());
 
+		// delegate the handler to an override class
 		if (method_exists($tokenHandler, 'setOverride'))
 		{
-			$tokenHandler->setOverride($config['token_handler_override']);
+			$tokenHandler->setOverride($config['token_handler_override'], $app);
 		}
 
 		$routeFilter = (new ReflectionClass($config['route_filter']))->newInstanceArgs(array($tokenDriver, $tokenHandler));
 
 		$routeFilter->register($this->app);
 
+		// binding that the LoginToken facade uses
 		$this->app->bind('login-token', function() use ($tokenDriver)
 		{
 			return $tokenDriver;

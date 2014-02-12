@@ -40,7 +40,7 @@ class LaravelRouteFilter implements RouteFilterInterface
 		}
 		catch (ExpiredTokenException $e)
 		{
-			return $this->tokenHandler->onInvalidToken($e);
+			return $this->tokenHandler->onExpiredToken($this->tokenDriver->check($token), $e);
 		}
 
 		return $this->tokenHandler->onValidToken($token);

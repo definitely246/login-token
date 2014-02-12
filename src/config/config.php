@@ -43,5 +43,5 @@
 	| token handlers.
 	|
 	*/
-	'token_handler_override' => 'LaravelTokenHandler'
+	'token_handler_override' => 'OverrideLoginTokenHandler'
 );

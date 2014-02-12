@@ -32,39 +32,44 @@ Since the tokens are stored in a database table we need to run migrations to gen
 
 ### Quickstart Example
 
-You are ready to go. Let's look at an example `routes.php` file
+You are ready to go. Normally you wouldn't put all the code below in a single file but for breviety let's just open up the `routes.php` file
 
 ```php
 
-// you don't have to define this class but then you probably want to edit your config or
-// you are stuck with the default out of the box token handler when the route filters run
-
-class LaravelTokenHandler implements Definitely246\LoginToken\Interfaces\TokenHandlerInterface
+class OverrideLoginTokenHandler1 implements Definitely246\LoginToken\Interfaces\TokenHandlerInterface
 {
 	public function onValidToken($token)
 	{
-		// dd('valid token', $token);
-		if (!Auth::check())
-		{
-			$userId = $token->getAttachment('user_id');
-			Auth::loginUsingId($userId);
-		}
+		dd('valid token', $token);
+		// if (!Auth::check())
+		// {
+		// 	$userId = $token->getAttachment('user_id');
+		// 	Auth::loginUsingId($userId);
+		// }
 	}
 
 	public function onInvalidToken($exception)
 	{
-		// dd('invalid token', $exception);
-		throw $exception;
+		dd('invalid token', $exception);
+		// throw $exception;
+	}
+
+	public function onExpiredToken($token, $exception)
+	{
+		dd('expired token', $token, $exception);
+		// $token->expires_at = new DateTime("+1 hour");
+		// $token->save();
+		// throw $exception;
 	}
 
 	public function onEmptyToken()
 	{
-		// dd('empty token');
-		return Redirect::to('login');
+		dd('empty token');
+		// return Redirect::to('login');
 	}
 }
 
-Route::group(['before' => 'login.token|auth'], function()
+Route::group(['before' => 'login.token|auth.basic'], function()
 {
     Route::get('foo', function()
     {
@@ -76,14 +81,25 @@ Route::group(['before' => 'login.token|auth'], function()
 Route::get('token', function()
 {
     $token = LoginToken::generate(null, ['user_id' => 1]);
+    $expired = LoginToken::generate(new DateTime("-1 day"), ['user_id' => 1]);
 
     return "
     	<p><a href=\"foo\">Go to /foo with no token</a></p>
     	<p><a href=\"foo?login_token={$token->token_string}\">Go to /foo with valid token</a></p>
     	<p><a href=\"foo?login_token=invalidtokenhere\">Go to /foo with invalid token</a></p>
+    	<p><a href=\"foo?login_token={$expired->token_string}\">Go to /foo with expired token</a></p>
     	";
 });
 
+```
+
+You don't have to define the `OverrideLoginTokenHandler` class. If you don't want to do this, you can also [publish your config](#Additional Configuration) and set the proper classes there. The default out of the box Handler is pretty generic and it is assumed you will write your own handlers.
+
+Note also that you can also use the IoC Container in Laravel to faciliate your handlers.
+
+```php
+	$foo = My\Cool\TokenHandlerOverride;
+	App::instance('OverrideLoginTokenHandler', $foo);
 ```
 
 ### About LoginToken Facade
@@ -186,7 +202,7 @@ This is the default class which handles what should happen when a route filter k
 This is the override class which (if defined) handles what should happen when a route filter kicks in.
 
 ```php
-	'token_handler_override' => 'LaravelTokenHandler',
+	'token_handler_override' => 'OverrideLoginTokenHandler',
 ```
 
 

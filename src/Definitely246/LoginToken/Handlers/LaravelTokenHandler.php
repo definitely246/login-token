@@ -13,14 +13,21 @@ class LaravelTokenHandler implements TokenHandlerInterface
 	private $override = null;
 
 	/**
-	 * Returns a new override class
-	 * @return null
+	 * Returns a new override class or instance from IoC container
+	 * if none of these options are available then we just return $this
+	 * 
+	 * @return TokenHandlerInterface
 	 */
 	public function getOverride()
 	{
-		if ($this->override && class_exists($this->override))
+		if (class_exists($this->override))
 		{
 			return (new ReflectionClass($this->override))->newInstance();
+		}
+
+		if ($this->app->bound($this->override))
+		{
+			return $this->app->make($this->override);
 		}
 
 		return null;
@@ -32,8 +39,9 @@ class LaravelTokenHandler implements TokenHandlerInterface
 	 * 
 	 * @param string
 	 */
-	public function setOverride($override)
+	public function setOverride($override, $app)
 	{
+		$this->app = $app;
 		$this->override = $override;
 	}
 
@@ -68,6 +76,24 @@ class LaravelTokenHandler implements TokenHandlerInterface
 		if ($override)
 		{
 			return $override->onInvalidToken($exception);
+		}
+
+		throw $exception;
+	}
+
+	/**
+	 * Calls when the token is expired
+	 * 
+	 * @param  Exception $exception
+	 * @return <any>
+	 */
+	public function onExpiredToken($token, $exception)
+	{
+		$override = $this->getOverride();
+
+		if ($override)
+		{
+			return $override->onExpiredToken($token, $exception);
 		}
 
 		throw $exception;
