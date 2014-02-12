@@ -95,8 +95,8 @@ Next you need a way to generate tokens, for this example we will just add anothe
 ```php
 Route::get('token', function()
 {
-    $token = LoginToken::generate(null, ['user_id' => 1]);
-    $expired = LoginToken::generate(new DateTime("-1 day"), ['user_id' => 1]);
+    $token = LoginToken::generate(['user_id' => 1]);
+    $expired = LoginToken::generate(['expires_at' => new DateTime("-1 day"), 'user_id' => 1]);
 
     return "
     	<p><a href=\"foo\">Go to /foo with no token</a></p>
@@ -133,12 +133,11 @@ LoginToken::check($tokenString);
 
 #### generate
 
-This will persist a new LoginToken with the given expires_at and attachments.
-$expires_at is a DateTime and $attachments should be an array of additional things you want to attach to this token.
-This will return the newly generated LoginToken.
+This will persist a new LoginToken with the given attachments. Note that 'expires_at' and 'expiresAt' are special keys
+in attachments which should be a DateTime and will help faciliate an expiration time on tokens. Returns newly generated LoginToken.
 
 ```php
-LoginToken::generate($expires_at = null, $attachments = array());
+LoginToken::generate($attachments = array('expires_at' => null));
 ```
 
 #### token

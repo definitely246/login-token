@@ -103,14 +103,27 @@ class LaravelDatabaseTokenDriver implements TokenDriverInterface
 	 * @param  string $expires_at
 	 * @return LoginToken
 	 */
-	public function generate($expires_at = null, $attachments = array())
+	public function generate($attachments = array())
 	{
+		$expires_at = null;
 		$token = $this->token->newInstance();
 
 		do {
 			$hashkey = $this->randomString(240);
 			$found = $token->find($hashkey);
 		} while ($found);
+
+		if (array_key_exists('expires_at', $attachments))
+		{
+			$expires_at = $attachments['expires_at'];
+			unset($attachments['expires_at']);
+		}
+
+		if (array_key_exists('expiresAt', $attachments))
+		{
+			$expires_at = $attachments['expiresAt'];
+			unset($attachments['expiresAt']);
+		}
 
 		$token->expires_at = $expires_at;
 		$token->attachments = $attachments;
