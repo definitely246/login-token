@@ -35,77 +35,76 @@ Since the tokens are stored in a database table we need to run migrations to gen
 You are ready to go. So you could add this route filter to your `filters.php`
 
 ```php
-/*
-|--------------------------------------------------------------------------
-| Login token filter
-|--------------------------------------------------------------------------
-|
-| This class handles incoming token requests that are in the route filter
-| for login.token. Basically, if a valid token is supplied then we login
-| the user in
-|
-*/
-Route::filter('login.token', function($route, $request)
-{
-	$tokenString = LoginToken::tokenString();
-
-	try
+	/*
+	|--------------------------------------------------------------------------
+	| Login token filter
+	|--------------------------------------------------------------------------
+	|
+	| This class handles incoming token requests that are in the route filter
+	| for login.token. Basically, if a valid token is supplied then we login
+	| the user in
+	|
+	*/
+	Route::filter('login.token', function($route, $request)
 	{
-		$token = LoginToken::attempt($tokenString);
+		$tokenString = LoginToken::tokenString();
 
-		$userId = $token->getAttachment('userId');
+		try
+		{
+			$token = LoginToken::attempt($tokenString);
 
-		Auth::loginUsingId($userId);
+			$userId = $token->getAttachment('userId');
 
-		$token->delete();
-	}
-	catch (Definitely246\LoginToken\Exceptions\EmptyTokenException $e)
-	{
-		// don't worry about empty tokens because our auth.basic
-		// filter will keep people from accessing the resource
-		// but we could handle this or just throw $e; if we wanted
-	}
-	catch (Definitely246\LoginToken\Exceptions\InvalidTokenException $e)
-	{
-		// and same reasoning about empty tokens applies to invalid tokens
-	}
-	catch (Definitely246\LoginToken\Exceptions\ExpiredTokenException $e)
-	{
-		// go ahead and delete expired tokens
-		$token = $e->getToken();
-		$token->delete();
-	}
-});
+			Auth::loginUsingId($userId);
+
+			$token->delete();
+		}
+		catch (Definitely246\LoginToken\Exceptions\EmptyTokenException $e)
+		{
+			// don't worry about empty tokens because our auth.basic
+			// filter will keep people from accessing the resource
+			// but we could handle this or just throw $e; if we wanted
+		}
+		catch (Definitely246\LoginToken\Exceptions\InvalidTokenException $e)
+		{
+			// and same reasoning about empty tokens applies to invalid tokens
+		}
+		catch (Definitely246\LoginToken\Exceptions\ExpiredTokenException $e)
+		{
+			// go ahead and delete expired tokens
+			$token = $e->getToken();
+			$token->delete();
+		}
+	});
 ```
 
 And then in your `routes.php` add something like this
 
 ```php
-Route::group(['before' => 'login.token|auth.basic'], function()
-{
-    Route::get('foo', function()
-    {
-    	return "this route is protected by auth.basic and login.token";
-    });
-});
-
+	Route::group(['before' => 'login.token|auth.basic'], function()
+	{
+	    Route::get('foo', function()
+	    {
+	    	return "this route is protected by auth.basic and login.token";
+	    });
+	});
 ```
 
 Next you need a way to generate tokens, for this example we will just add another route to our `routes.php`
 
 ```php
-Route::get('token', function()
-{
-    $token = LoginToken::generate(null, ['user_id' => 1]);
-    $expired = LoginToken::generate(new DateTime("-1 day"), ['user_id' => 1]);
+	Route::get('token', function()
+	{
+	    $token = LoginToken::generate(null, ['user_id' => 1]);
+	    $expired = LoginToken::generate(new DateTime("-1 day"), ['user_id' => 1]);
 
-    return "
-    	<p><a href=\"foo\">Go to /foo with no token</a></p>
-    	<p><a href=\"foo?login_token={$token->token_string}\">Go to /foo with valid token</a></p>
-    	<p><a href=\"foo?login_token=invalidtokenhere\">Go to /foo with invalid token</a></p>
-    	<p><a href=\"foo?login_token={$expired->token_string}\">Go to /foo with expired token</a></p>
-    	";
-});
+	    return "
+	    	<p><a href=\"foo\">Go to /foo with no token</a></p>
+	    	<p><a href=\"foo?login_token={$token->token_string}\">Go to /foo with valid token</a></p>
+	    	<p><a href=\"foo?login_token=invalidtokenhere\">Go to /foo with invalid token</a></p>
+	    	<p><a href=\"foo?login_token={$expired->token_string}\">Go to /foo with expired token</a></p>
+	    	";
+	});
 ```
 
 ### About LoginToken Facade
