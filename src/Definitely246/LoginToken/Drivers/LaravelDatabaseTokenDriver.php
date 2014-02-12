@@ -70,6 +70,16 @@ class LaravelDatabaseTokenDriver implements TokenDriverInterface
 	}
 
 	/**
+	 * Returns a login token if one is active at the moment
+	 * 
+	 * @return LoginToken
+	 */
+	public function current()
+	{
+		return $this->token;
+	}
+
+	/**
 	 * Logs a token out (just another way to remove a token really)
 	 * 
 	 * @param  LoginToken $token
@@ -92,7 +102,7 @@ class LaravelDatabaseTokenDriver implements TokenDriverInterface
 		{
 			return $this->table->where('id', $token->id)->update($token->getAttributes());
 		}
-		
+
 		$token->id = $this->table->insertGetId($token->getAttributes());
 
 		return $token;

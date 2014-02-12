@@ -20,6 +20,8 @@ class LoginTokenServiceProvider extends ServiceProvider
 	{
 		$this->package('definitely246/login-token');
 
+		$app = $this->app;
+
 		$config = $this->app->config->get('login-token::config');
 
 		$tokenDriver = (new ReflectionClass($config['token_driver']))->newInstanceArgs(array($this->app));
@@ -32,7 +34,7 @@ class LoginTokenServiceProvider extends ServiceProvider
 
 		$this->app->bind('login-token', function() use ($tokenDriver)
 		{
-			return new Models\LoginToken(array(), $tokenDriver);
+			return $tokenDriver->current();
 		});
 	}
 

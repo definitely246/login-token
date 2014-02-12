@@ -6,6 +6,7 @@ interface TokenDriverInterface
 {
 	public function attempt($tokenString);
 	public function check($tokenString);
+	public function currentLoginToken();
 	public function logout(LoginToken $token);
 	public function refresh(LoginToken $token);
 }

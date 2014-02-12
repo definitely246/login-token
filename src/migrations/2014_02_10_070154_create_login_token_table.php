@@ -15,8 +15,7 @@ class CreateLoginTokenTable extends Migration {
 	    {
 			$table->increments('id');
 			$table->string('token_string');
-			$table->unsignedInteger('identifiable_id')->nullable();
-			$table->string('identifiable_type')->nullable();
+			$table->text('attachments')->nullable();
 			$table->datetime('expires_at')->nullable();
 			$table->timestamps();
 

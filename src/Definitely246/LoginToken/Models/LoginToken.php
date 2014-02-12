@@ -41,16 +41,15 @@ class LoginToken extends AbstractModel
 	}
 
 	/**
-	 * [getIdentifier description]
-	 * @return [type] [description]
+	 * Gets the current LoginToken if any
+	 * 
+	 * @return LoginToken
 	 */
-	public function getIdentifier()
+	public function current()
 	{
-		if ($this->identifiable_type && $this->identifiable_id)
+		if ($this->id)
 		{
-			$constructor = new ReflectionClass($this->identifiable_type);
-			$instance = $constructor->newInstance();
-			return $instance->find($this->identifiable_id);
+			return $this;
 		}
 
 		return null;
